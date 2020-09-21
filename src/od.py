@@ -45,6 +45,143 @@ class Klass:
     def __repr__(self):
         return "<class %s>" % self.name
 
+class Zero:
+    def __init(self):
+        self.flip = 0
+    def own(self):
+        return 0
+    def incrOwn(self):
+        pass
+    def decrOwn(self):
+        pass
+    def vis(self):
+        return 0
+    def incrVis(self):
+        pass
+    def decrVis(self):
+        pass
+    def isDirty(self):
+        return False
+    def copy(self):
+        return self
+    def __repr__(self):
+        return 'z'
+zero = Zero()
+
+class Ref:
+    def __init__(self, o, tmp=True):
+        self.o = o
+        self.tmp = tmp
+        o.incrOwn()
+    def take(self):
+        # lvalue
+        if self.o.own() > 1:
+            assert self.o.vis() == 0, 'visss'
+            # copy myself
+            self.o.decrOwn()
+            self.o = Obj(self.o.a.o, self.o.b.o, self.o.f)
+            self.o.incrOwn()
+        self.o.incrVis()
+        return self
+    def untake(self):
+        # pop from stack
+        self.o.decrVis()
+        if self.tmp and self.o.vis() == 0:
+            self.o.decrOwn()
+    def setTo(self, p):
+        # c command
+        self.o.decrVis()
+        self.o.decrOwn()
+        self.o = p.o.copy()
+        self.o.incrOwn()
+    def __repr__(self):
+        return '&'+str(self.o)
+
+class Obj:
+    def __init__(self, a, b, f):
+        self.a = Ref(a, False)
+        self.b = Ref(b, False)
+        self.f = f
+        self._dirty = False
+        self._own = 0
+        self._vis = 0
+    def own(self):
+        return self._own
+    def incrOwn(self):
+        self._own += 1
+    def decrOwn(self):
+        self._own -= 1
+        if self._own + self._vis == 0:
+            self.a.o.decrOwn()
+            self.b.o.decrOwn()
+    def vis(self):
+        return self._vis
+    def incrVis(self):
+        self._vis += 1
+        self._dirty = True
+    def decrVis(self):
+        self._vis -= 1
+        if self._own + self._vis == 0:
+            self.a.o.decrOwn()
+            self.b.o.decrOwn()
+    def isDirty(self):
+        return self._dirty
+    def copy(self):
+        if self._dirty:
+            a = self.a.o
+            a2 = a.copy()
+            b = self.b.o
+            b2 = b.copy()
+            self._dirty = self._vis > 0 or a.isDirty() or b.isDirty()
+            return Obj(a2, b2, self.f)
+        return self
+    def __repr__(self):
+        return "%x{a=%s b=%s f=%s vis=%d own=%d dirty=%s}"%(
+            hash(self), self.a, self.b, self.f, self._vis, self._own, self._dirty
+        )
+
+def createObject(a, b, klass):
+    return Ref(Obj(a.o.copy(), b.o.copy(), klass)).take()
+
+t = Ref(zero, False)
+t.take()
+t.take()
+t.take()
+t.untake()
+t.untake()
+t1 = createObject(t, t, 1)
+t.setTo(t1)
+t1.untake()
+
+t.take()
+t.take()
+t.take()
+t.untake()
+t.untake()
+t1 = createObject(t, t, 2)
+t.setTo(t1)
+t1.untake()
+
+t.take()
+t.take()
+t.take()
+t.untake()
+t.untake()
+t1 = createObject(t, t, 3)
+t.setTo(t1)
+t1.untake()
+
+t.take()
+t.take()
+t.take()
+t.untake()
+t.untake()
+t1 = createObject(t, t, 4)
+t.setTo(t1)
+t1.untake()
+print(t)
+t.o.decrOwn()
+
 def parseExpr(s, code, stmt=False):
     while True:
         ch = s.next()
@@ -91,7 +228,6 @@ def parseExpr(s, code, stmt=False):
         parseExpr(s, code)
         parseExpr(s, code)
         code.append('c')
-        if stmt: code.append('*')
     elif stmt and ch in 'or':
         parseExpr(s, code)
         if ch == 'r':
