@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 args = argparse.ArgumentParser()
 args.add_argument('file', help='Object Disoriented program')
@@ -46,7 +47,7 @@ class Klass:
         return "<class %s>" % self.name
 
 class Zero:
-    def __init(self):
+    def __init__(self):
         self.flip = 0
     def own(self):
         return 0
@@ -67,6 +68,7 @@ class Zero:
     def __repr__(self):
         return 'z'
 zero = Zero()
+onetest = Zero()
 
 class Ref:
     def __init__(self, o, tmp=True):
@@ -157,13 +159,30 @@ def outputBit(bit):
     bitbuffer[1] += 1
     if bitbuffer[1] == 8:
         bitbuffer[1] = 0
-        print(chr(bitbuffer[0]), end='')
+        sys.stdout.write(chr(bitbuffer[0]))
         bitbuffer[0] = 0
+
+klasses['.one'] = Klass(['p', 'z', 'f', '*', 'z'], [], [], '.one')
+inbitbuffer = [0, 0]
+def inputBit():
+    if inbitbuffer[1] == 0:
+        c = sys.stdin.read(1)
+        if c == '':
+            inbitbuffer[0] = 0
+        else:
+            inbitbuffer[0] = ord(c)
+        inbitbuffer[1] = 8
+    inbitbuffer[1] -= 1
+    return (inbitbuffer[0] >> inbitbuffer[1]) & 1
 
 def runFunc(s, p):
     self = s.o
     if self is zero:
         p.untake()
+        return s
+    if self is onetest:
+        p.untake()
+        onetest.flip = 1 - onetest.flip
         return s
     #print('enter', self.f.name)
     self.incrVis()
@@ -196,10 +215,14 @@ def runFunc(s, p):
             print(stack[-1])
         elif op == 'o':
             what = stack.pop()
-            if what.o is zero:
-                outputBit(0)
+            onetest.flip = 0
+            runFunc(what, Ref(onetest)).untake()
+            outputBit(onetest.flip)
+        elif op == 'i':
+            if inputBit() == 0:
+                stack.append(Ref(zero))
             else:
-                outputBit(1)
+                stack.append(createObject(Ref(zero), Ref(zero), klasses['.one']))
         elif isinstance(op, Klass):
             b = stack.pop()
             a = stack.pop()
@@ -213,57 +236,6 @@ def runFunc(s, p):
     t.o.decrOwn()
     #print('leave', self.f.name)
     return stack[0]
-
-t = Ref(zero, False)
-t1 = t.take()
-t2 = t.take()
-t3 = t.take()
-print('1. untake')
-t2 = createObject(t2, t3, Klass([],[],[],'1'))
-del t3
-print('1. untake')
-t1.setTo(t2)
-del t2
-del t1
-print('1. untake')
-
-t1 = t.take()
-t2 = t.take()
-t3 = t.take()
-print('2. untake')
-t2 = createObject(t2, t3, Klass([],[],[],'2'))
-del t3
-print('2. untake')
-t1.setTo(t2)
-del t2
-del t1
-print('2. untake')
-
-t1 = t.take()
-t2 = t.take()
-t3 = t.take()
-print('3. untake')
-t2 = createObject(t2, t3, Klass([],[],[],'3'))
-del t3
-print('3. untake')
-t1.setTo(t2)
-del t2
-del t1
-print('3. untake')
-
-t1 = t.take()
-t2 = t.take()
-t3 = t.take()
-print('4. untake')
-t2 = createObject(t2, t3, Klass([],[],[],'4'))
-del t3
-print('4. untake')
-t1.setTo(t2)
-del t2
-del t1
-print('4. untake')
-print(t)
-t.o.decrOwn()
 
 def parseExpr(s, code, stmt=False):
     while True:
@@ -379,7 +351,7 @@ for name in klasses:
         else:
             newcode.append(op)
     cls.code = newcode
-    print(cls, cls.code)
+    #print(cls, cls.code)
 
 main_class = klasses['main']
 main0_code = main_class.a + main_class.b + [main_class, 'z', 'f']
