@@ -72,7 +72,8 @@ class Ref:
     def __init__(self, o, tmp=True):
         self.o = o
         self.tmp = tmp
-        o.incrOwn()
+        if not tmp:
+            o.incrOwn()
     def take(self):
         # lvalue
         if self.o.own() > 1:
@@ -86,14 +87,15 @@ class Ref:
     def untake(self):
         # pop from stack
         self.o.decrVis()
-        if self.tmp and self.o.vis() == 0:
-            self.o.decrOwn()
     def setTo(self, p):
         # c command
         self.o.decrVis()
-        self.o.decrOwn()
+        if not self.tmp:
+            self.o.decrOwn()
         self.o = p.o.copy()
-        self.o.incrOwn()
+        if not self.tmp:
+            self.o.incrOwn()
+        p.untake()
     def __repr__(self):
         return '&'+str(self.o)
 
@@ -105,6 +107,9 @@ class Obj:
         self._dirty = False
         self._own = 0
         self._vis = 0
+    def __del__(self):
+        #print(self.f.name, self.vis(), self.own())
+        pass
     def own(self):
         return self._own
     def incrOwn(self):
@@ -141,44 +146,122 @@ class Obj:
         )
 
 def createObject(a, b, klass):
-    return Ref(Obj(a.o.copy(), b.o.copy(), klass)).take()
+    out = Ref(Obj(a.o.copy(), b.o.copy(), klass)).take()
+    a.untake()
+    b.untake()
+    return out
+
+bitbuffer = [0, 0]
+def outputBit(bit):
+    bitbuffer[0] = bitbuffer[0]*2 + bit
+    bitbuffer[1] += 1
+    if bitbuffer[1] == 8:
+        bitbuffer[1] = 0
+        print(chr(bitbuffer[0]), end='')
+        bitbuffer[0] = 0
+
+def runFunc(s, p):
+    self = s.o
+    if self is zero:
+        p.untake()
+        return s
+    #print('enter', self.f.name)
+    self.incrVis()
+    t = Ref(zero, False)
+    stack = []
+    for op in self.f.code:
+        if op == 'f':
+            p0 = stack.pop()
+            s0 = stack.pop()
+            stack.append(runFunc(s0, p0))
+        elif op == 'z':
+            stack.append(Ref(zero))
+        elif op == 'a':
+            stack.append(self.a.take())
+        elif op == 'b':
+            stack.append(self.b.take())
+        elif op == 'p':
+            stack.append(p.take())
+        elif op == 's':
+            stack.append(s.take())
+        elif op == 't':
+            stack.append(t.take())
+        elif op == 'c':
+            ddest = stack.pop()
+            ssrc = stack.pop()
+            ddest.setTo(ssrc)
+        elif op == '*':
+            stack.pop().untake()
+        elif op == '?':
+            print(stack[-1])
+        elif op == 'o':
+            what = stack.pop()
+            if what.o is zero:
+                outputBit(0)
+            else:
+                outputBit(1)
+        elif isinstance(op, Klass):
+            b = stack.pop()
+            a = stack.pop()
+            stack.append(createObject(a, b, op))
+        else:
+            raise NotImplementedError(op)
+    # release object
+    self.decrVis()
+    p.untake()
+    s.untake()
+    t.o.decrOwn()
+    #print('leave', self.f.name)
+    return stack[0]
 
 t = Ref(zero, False)
-t.take()
-t.take()
-t.take()
-t.untake()
-t.untake()
-t1 = createObject(t, t, 1)
-t.setTo(t1)
-t1.untake()
+t1 = t.take()
+t2 = t.take()
+t3 = t.take()
+print('1. untake')
+t2 = createObject(t2, t3, Klass([],[],[],'1'))
+del t3
+print('1. untake')
+t1.setTo(t2)
+del t2
+del t1
+print('1. untake')
 
-t.take()
-t.take()
-t.take()
-t.untake()
-t.untake()
-t1 = createObject(t, t, 2)
-t.setTo(t1)
-t1.untake()
+t1 = t.take()
+t2 = t.take()
+t3 = t.take()
+print('2. untake')
+t2 = createObject(t2, t3, Klass([],[],[],'2'))
+del t3
+print('2. untake')
+t1.setTo(t2)
+del t2
+del t1
+print('2. untake')
 
-t.take()
-t.take()
-t.take()
-t.untake()
-t.untake()
-t1 = createObject(t, t, 3)
-t.setTo(t1)
-t1.untake()
+t1 = t.take()
+t2 = t.take()
+t3 = t.take()
+print('3. untake')
+t2 = createObject(t2, t3, Klass([],[],[],'3'))
+del t3
+print('3. untake')
+t1.setTo(t2)
+del t2
+del t1
+print('3. untake')
 
-t.take()
-t.take()
-t.take()
-t.untake()
-t.untake()
-t1 = createObject(t, t, 4)
-t.setTo(t1)
-t1.untake()
+t1 = t.take()
+t2 = t.take()
+t3 = t.take()
+print('4. untake')
+t2 = createObject(t2, t3, Klass([],[],[],'4'))
+del t3
+print('4. untake')
+t1.setTo(t2)
+del t2
+del t1
+print('4. untake')
 print(t)
 t.o.decrOwn()
 
@@ -224,6 +307,9 @@ def parseExpr(s, code, stmt=False):
         kls = Klass(inner, [], [], genname)
         klasses[genname] = kls
         code.append(kls)
+    elif ch == '?':
+        parseExpr(s, code)
+        code.append('?')
     elif stmt and ch == 'c':
         parseExpr(s, code)
         parseExpr(s, code)
@@ -294,3 +380,10 @@ for name in klasses:
             newcode.append(op)
     cls.code = newcode
     print(cls, cls.code)
+
+main_class = klasses['main']
+main0_code = main_class.a + main_class.b + [main_class, 'z', 'f']
+main0_class = Klass(main0_code, ['z'], ['z'], '.main')
+main0 = Ref(Obj(zero, zero, main0_class))
+main0.take()
+runFunc(main0, Ref(zero))
