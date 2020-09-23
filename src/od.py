@@ -40,35 +40,16 @@ class Scanner:
 class Klass:
     def __init__(self, code, a, b, name):
         self.code = code
+        # tail call optimization
+        if code[-1] == 'f':
+            code[-1] = 'fr'
+        if len(code) > 3 and code[-3:] == ['f','*','z']:
+            code[-3:] = ['frz']
         self.a = a
         self.b = b
         self.name = name
     def __repr__(self):
         return "<class %s>" % self.name
-
-class Zero:
-    def __init__(self):
-        self.flip = 0
-    def own(self):
-        return 0
-    def incrOwn(self):
-        pass
-    def decrOwn(self):
-        pass
-    def vis(self):
-        return 0
-    def incrVis(self):
-        pass
-    def decrVis(self):
-        pass
-    def isDirty(self):
-        return False
-    def copy(self):
-        return self
-    def __repr__(self):
-        return 'z'
-zero = Zero()
-onetest = Zero()
 
 class Ref:
     def __init__(self, o, tmp=True):
@@ -79,10 +60,13 @@ class Ref:
     def take(self):
         # lvalue
         if self.o.own() > 1:
-            assert self.o.vis() == 0, 'visss'
+            assert self.o.vis() == 0, 'vis='+str(self.o.vis())
             # copy myself
             self.o.decrOwn()
-            self.o = Obj(self.o.a.o, self.o.b.o, self.o.f)
+            if self.o.isZero():
+                self.o = Zero()
+            else:
+                self.o = Obj(self.o.a.o, self.o.b.o, self.o.f)
             self.o.incrOwn()
         self.o.incrVis()
         return self
@@ -92,14 +76,18 @@ class Ref:
     def setTo(self, p):
         # c command
         self.o.decrVis()
+        v = self.o.vis1()
+        self.o.decrVis(v)
         if not self.tmp:
             self.o.decrOwn()
         self.o = p.o.copy()
         if not self.tmp:
             self.o.incrOwn()
+        self.o.incrVis(v)
         p.untake()
     def __repr__(self):
-        return '&'+str(self.o)
+        if self.tmp: return '&'+str(self.o)
+        return str(self.o)
 
 class Obj:
     def __init__(self, a, b, f):
@@ -109,26 +97,41 @@ class Obj:
         self._dirty = False
         self._own = 0
         self._vis = 0
+        self._vis2 = 0
     def __del__(self):
         #print(self.f.name, self.vis(), self.own())
         pass
+    def isZero(self):
+        return False
     def own(self):
         return self._own
     def incrOwn(self):
         self._own += 1
     def decrOwn(self):
         self._own -= 1
-        if self._own + self._vis == 0:
+        if self._own + self._vis + self._vis2 == 0:
             self.a.o.decrOwn()
             self.b.o.decrOwn()
     def vis(self):
+        return self._vis + self._vis2
+    def vis1(self):
         return self._vis
-    def incrVis(self):
-        self._vis += 1
+    def incrVis(self, v=1):
+        self._vis += v
         self._dirty = True
-    def decrVis(self):
-        self._vis -= 1
-        if self._own + self._vis == 0:
+    def decrVis(self, v=1):
+        assert self._vis >= v, 'vis='+str(self._vis)+str(self._vis2)
+        self._vis -= v
+        if self._own + self._vis + self._vis2 == 0:
+            self.a.o.decrOwn()
+            self.b.o.decrOwn()
+    def incrVis2(self):
+        self._vis2 += 1
+        self._dirty = True
+    def decrVis2(self):
+        assert self.vis() > 0, 'vis='+str(self._vis)+str(self._vis2)
+        self._vis2 -= 1
+        if self._own + self._vis + self._vis2 == 0:
             self.a.o.decrOwn()
             self.b.o.decrOwn()
     def isDirty(self):
@@ -139,13 +142,45 @@ class Obj:
             a2 = a.copy()
             b = self.b.o
             b2 = b.copy()
-            self._dirty = self._vis > 0 or a.isDirty() or b.isDirty()
+            self._dirty = self.vis() > 0 or a.isDirty() or b.isDirty()
             return Obj(a2, b2, self.f)
         return self
     def __repr__(self):
-        return "%x{a=%s b=%s f=%s vis=%d own=%d dirty=%s}"%(
-            hash(self), self.a, self.b, self.f, self._vis, self._own, self._dirty
+        return "%s{a=%s b=%s v=%d,%d o=%d}"%(
+            self.f.name, self.a, self.b, self._vis, self._vis2, self._own
         )
+
+class Zero(Obj):
+    def __init__(self):
+        self.a = 0
+        self.b = 1
+        self._own = 0
+        self._vis = 0
+        self._vis2 = 0
+        self._dirty = False
+    def isZero(self):
+        return True
+    def copy(self):
+        return self
+    def __repr__(self):
+        return "z{v=%d%d o=%d}"%(
+            self._vis, self._vis2, self._own
+        )
+    def decrOwn(self):
+        self._own -= 1
+    def decrVis(self, v=1):
+        assert self._vis >= v, 'vis='+str(self._vis)+str(self._vis2)
+        self._vis -= v
+    def decrVis2(self, v=1):
+        assert self._vis2 >= v, 'vis='+str(self._vis)+str(self._vis2)
+        self._vis2 -= v
+    def copy(self):
+        if self._dirty:
+            self._dirty = self.vis() > 0
+            return Zero()
+        return self
+    def flip(self):
+        self.a, self.b = self.b, self.a
 
 def createObject(a, b, klass):
     out = Ref(Obj(a.o.copy(), b.o.copy(), klass)).take()
@@ -175,26 +210,28 @@ def inputBit():
     inbitbuffer[1] -= 1
     return (inbitbuffer[0] >> inbitbuffer[1]) & 1
 
-def runFunc(s, p):
+def runFunc(s, p, indent=0):
     self = s.o
-    if self is zero:
+    returnZ = False
+    if self.isZero():
+        self.flip()
         p.untake()
         return s
-    if self is onetest:
-        p.untake()
-        onetest.flip = 1 - onetest.flip
-        return s
-    #print('enter', self.f.name)
-    self.incrVis()
-    t = Ref(zero, False)
+    #print('-'*indent+'enter', self.f.name)
+    self.incrVis2()
+    t = Ref(Zero(), False)
     stack = []
-    for op in self.f.code:
+    i = 0
+    code = self.f.code
+    while i < len(code):
+        op = code[i]
+        i += 1
         if op == 'f':
             p0 = stack.pop()
             s0 = stack.pop()
-            stack.append(runFunc(s0, p0))
+            stack.append(runFunc(s0, p0, indent+1))
         elif op == 'z':
-            stack.append(Ref(zero))
+            stack.append(Ref(Zero()).take())
         elif op == 'a':
             stack.append(self.a.take())
         elif op == 'b':
@@ -215,14 +252,40 @@ def runFunc(s, p):
             print(stack[-1])
         elif op == 'o':
             what = stack.pop()
-            onetest.flip = 0
-            runFunc(what, Ref(onetest)).untake()
-            outputBit(onetest.flip)
+            onetest = Ref(Zero()).take()
+            onetest0 = onetest.o
+            onetest0.incrVis2()
+            runFunc(what, onetest).untake()
+            outputBit(onetest0.a)
+            onetest0.decrVis2()
         elif op == 'i':
             if inputBit() == 0:
-                stack.append(Ref(zero))
+                stack.append(Ref(Zero()).take())
             else:
-                stack.append(createObject(Ref(zero), Ref(zero), klasses['.one']))
+                stack.append(createObject(Ref(Zero()).take(), Ref(Zero()).take(), klasses['.one']))
+        elif op == 'fr' or op == 'frz':
+            if op == 'frz':
+                returnZ = True
+            # release object
+            self.decrVis2()
+            p.untake()
+            s.untake()
+            t.o.decrOwn()
+
+            # call object
+            p = stack.pop()
+            s = stack.pop()
+            self = s.o
+            if self.isZero():
+                self.flip()
+                p.untake()
+                return Ref(Zero()).take() if returnZ else s
+            #print('-'*indent+'goto', self.f.name)
+            self.incrVis2()
+            t = Ref(Zero(), False)
+            stack = []
+            i = 0
+            code = self.f.code
         elif isinstance(op, Klass):
             b = stack.pop()
             a = stack.pop()
@@ -230,12 +293,14 @@ def runFunc(s, p):
         else:
             raise NotImplementedError(op)
     # release object
-    self.decrVis()
+    #print('self =',self)
+    self.decrVis2()
+    #print('p =',p)
     p.untake()
     s.untake()
     t.o.decrOwn()
-    #print('leave', self.f.name)
-    return stack[0]
+    #print('-'*indent+'leave', self.f.name)
+    return Ref(Zero()).take() if returnZ else stack[0]
 
 def parseExpr(s, code, stmt=False):
     while True:
@@ -356,6 +421,6 @@ for name in klasses:
 main_class = klasses['main']
 main0_code = main_class.a + main_class.b + [main_class, 'z', 'f']
 main0_class = Klass(main0_code, ['z'], ['z'], '.main')
-main0 = Ref(Obj(zero, zero, main0_class))
+main0 = Ref(Obj(Zero(), Zero(), main0_class))
 main0.take()
-runFunc(main0, Ref(zero))
+runFunc(main0, Ref(Zero()).take())
