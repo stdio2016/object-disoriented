@@ -3,6 +3,7 @@ import sys
 
 args = argparse.ArgumentParser()
 args.add_argument('file', help='Object Disoriented program')
+args.add_argument('--objcnt', action='store_true')
 args = args.parse_args()
 
 namescope = ['', 0]
@@ -51,6 +52,8 @@ class Klass:
     def __repr__(self):
         return "<class %s>" % self.name
 
+objcnt = 0
+stepcnt = 0
 class Ref:
     def __init__(self, o, tmp=True):
         self.o = o
@@ -91,6 +94,8 @@ class Ref:
 
 class Obj:
     def __init__(self, a, b, f):
+        global objcnt
+        objcnt += 1
         self.a = Ref(a, False)
         self.b = Ref(b, False)
         self.f = f
@@ -146,12 +151,14 @@ class Obj:
             return Obj(a2, b2, self.f)
         return self
     def __repr__(self):
-        return "%s{a=%s b=%s v=%d,%d o=%d}"%(
-            self.f.name, self.a, self.b, self._vis, self._vis2, self._own
+        return "%s{a=%s b=%s}"%(
+            self.f.name, self.a, self.b
         )
 
 class Zero(Obj):
     def __init__(self):
+        global objcnt
+        objcnt += 1
         self.a = 0
         self.b = 1
         self._own = 0
@@ -163,9 +170,7 @@ class Zero(Obj):
     def copy(self):
         return self
     def __repr__(self):
-        return "z{v=%d%d o=%d}"%(
-            self._vis, self._vis2, self._own
-        )
+        return "z"
     def decrOwn(self):
         self._own -= 1
     def decrVis(self, v=1):
@@ -195,6 +200,7 @@ def outputBit(bit):
     if bitbuffer[1] == 8:
         bitbuffer[1] = 0
         sys.stdout.write(chr(bitbuffer[0]))
+        sys.stdout.flush()
         bitbuffer[0] = 0
 
 klasses['.one'] = Klass(['p', 'z', 'f', '*', 'z'], [], [], '.one')
@@ -223,9 +229,11 @@ def runFunc(s, p, indent=0):
     stack = []
     i = 0
     code = self.f.code
+    global stepcnt
     while i < len(code):
         op = code[i]
         i += 1
+        stepcnt += 1
         if op == 'f':
             p0 = stack.pop()
             s0 = stack.pop()
@@ -249,7 +257,7 @@ def runFunc(s, p, indent=0):
         elif op == '*':
             stack.pop().untake()
         elif op == '?':
-            print(stack[-1])
+            print(hash(stack[-1]), stack[-1])
         elif op == 'o':
             what = stack.pop()
             onetest = Ref(Zero()).take()
@@ -424,3 +432,6 @@ main0_class = Klass(main0_code, ['z'], ['z'], '.main')
 main0 = Ref(Obj(Zero(), Zero(), main0_class))
 main0.take()
 runFunc(main0, Ref(Zero()).take())
+if args.objcnt:
+    print("obj %d" % objcnt)
+    print("step %d" % stepcnt)
