@@ -1,0 +1,74 @@
+e  This hello world program implements a 88 bits stack   .
+e  The stack represents the 11 char ascii data .
+
+e  This function pushes a 0 onto a stack  .
+dp0.
+  cn
+    cas
+    rz
+  pz
+  p
+  rz
+zz
+
+e  This function pushes a 1 onto a stack  .
+dp1.
+  cn
+    cas
+    r n fpz rz zz
+  pz
+  p
+  rz
+zz
+
+e  This function creates a hello world stack  .
+dmakehelloworld.
+  e the bit stack is reversed because it will be stored in stack.
+  flp0.a flp0.a flp1.a flp0.a flp0.a flp1.a flp1.a flp0.a     e   d   .
+  flp0.a flp0.a flp1.a flp1.a flp0.a flp1.a flp1.a flp0.a     e   l   .
+  flp0.a flp1.a flp0.a flp0.a flp1.a flp1.a flp1.a flp0.a     e   r   .
+  flp1.a flp1.a flp1.a flp1.a flp0.a flp1.a flp1.a flp0.a     e   o   .
+  flp1.a flp1.a flp1.a flp0.a flp1.a flp1.a flp1.a flp0.a     e   w   .
+  flp0.a flp0.a flp0.a flp0.a flp0.a flp1.a flp0.a flp0.a     e space .
+  flp1.a flp1.a flp1.a flp1.a flp0.a flp1.a flp1.a flp0.a     e   o   .
+  flp0.a flp0.a flp1.a flp1.a flp0.a flp1.a flp1.a flp0.a     e   l   .
+  flp0.a flp0.a flp1.a flp1.a flp0.a flp1.a flp1.a flp0.a     e   l   .
+  flp1.a flp0.a flp1.a flp0.a flp0.a flp1.a flp1.a flp0.a     e   e   .
+  flp0.a flp0.a flp0.a flp1.a flp0.a flp1.a flp1.a flp0.a     e   h   .
+  ra
+zz
+
+e  This function takes a function and returns a function that repeats it 8 times  .
+dmakeloop8.
+  rn
+    fap fap fap
+    fap fap fap
+    fap fap
+    rz
+  pz
+zz
+
+e  This function takes a function and returns a function that repeats it 11 times  .
+dmakeloop11.
+  rn
+    fap fap fap fap
+    fap fap fap fap
+    fap fap fap
+    rz
+  pz
+zz
+
+e  This function pops a bit off the input (passed by reference) and outputs it  .
+dprintstackbit.
+  cfpza
+  oa
+  rz
+zz
+
+e  This function coordinates all the previous functions together (and is the entry point)  .
+dmain.
+  c flmakehelloworld.z a
+  c flmakeloop11. flmakeloop8. lprintstackbit. b
+  fba
+  rz
+zz

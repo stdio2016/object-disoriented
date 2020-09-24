@@ -1,0 +1,6 @@
+e This program will store all the data input until
+it reads a char >128 into a string, then output it.
+
+dmain.cia cnfazobrzpap cncatcbactbrb snfpzrzzzt fatcftzt
+cnfazobrzpip cnfazobrzpip cnfazobrzpip cnfazobrzpip
+cnfazobrzpip cnfazobrzpip cnfazobrzpip ftprzzz

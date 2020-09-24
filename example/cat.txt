@@ -1,0 +1,14 @@
+e  This is CAT   .
+
+e  This class is an infinite loop that inputs a bit and outputs it on each iteration  .
+dcatloop.
+  oi
+  fsz
+  rz
+zz
+
+e  This class is the program's entry point; it simply runs the catloop class's function  .
+dmain.
+  flcatloop.z
+  rz
+zz

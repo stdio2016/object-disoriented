@@ -1,0 +1,427 @@
+e copied from https://esolangs<dot>org/wiki/Object_disoriented_Turing-completeness_proof.
+e made some modification because the original code contains syntax errors.
+e brainfuck interpreter in object disoriented, beta.
+
+dmpair.
+  r n
+    r n
+      cat cba ctb rb
+    ap
+  pz
+zz
+
+dconcat.
+  rn
+    rn
+       fap
+       rfbp
+    ap
+  pz
+zz
+
+done.
+  fpz rz
+zz
+
+dpush.
+  rn
+    rn
+      cbs
+      ra
+    ap
+  pz
+zz
+
+
+darraynext.
+  cfpz a
+  cfpz b
+  cfazt
+  cfflpush. t b b
+  cfflmpair. a b p
+  rz
+zz
+
+darrayprev.
+  cfpz a
+  cfpz b
+  cfbzt
+  cfflpush. t a a
+  cfflmpair. a b p
+  rz
+zz
+
+darrayread.
+  cfpz a
+  cfpz b
+  cfazt
+  rt
+zz
+
+darraywrite.
+  rn
+    cfpz a
+    cfpz t
+    faz
+    cfflpush.baa
+    cfflmpair.a t p
+    rz
+  zp
+zz
+
+dinc8.
+  cfpzt  cfflmpair. flnot.t t t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. tb ffland. tb t
+  cfflpush. ftz a a  cftz b
+  flflip8.a
+  cap
+  rz
+zz
+
+ddec8.
+  cfpzt  cfflmpair. flnot.t flnot.t t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  cfpzt  cfflmpair. fflxor. t b ffland. flnot.t b t
+  cfflpush. ftz a a  cftz b
+  flflip8.a
+  cap
+  rz
+zz
+
+dflip8.
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cfflpush. fpz a a
+  cap
+  rz
+zz
+
+disnonzero8.
+  cpt
+  c fflor.ftz a a
+  c fflor.ftz a a
+  c fflor.ftz a a
+  c fflor.ftz a a
+  c fflor.ftz a a
+  c fflor.ftz a a
+  c fflor.ftz a a
+  c fflor.ftz a a
+  ra
+zz
+
+doutput8.
+  cpa
+  flflip8.a
+  ofaz
+  ofaz
+  ofaz
+  ofaz
+  ofaz
+  ofaz
+  ofaz
+  ofaz
+  rz
+zz
+
+dinput8.
+  cfflpush. i a a
+  cfflpush. i a a
+  cfflpush. i a a
+  cfflpush. i a a
+  cfflpush. i a a
+  cfflpush. i a a
+  cfflpush. i a a
+  cfflpush. i a a
+  ra
+zz
+
+e  ascii hex   dec   bin       key   op
+   +     2B    43    00101011  0011  increment
+   -     2D    45    00101101  0001  decrement
+   <     3C    60    00111100  0100  previous
+   >     3E    62    00111110  0110  next
+   ,     2C    44    00101100  0000  input
+   dot   2E    46    00101110  0010  output
+   [     5B    91    01011011  1 11  loop start 
+   ]     5D    93    01011101  1 10  loop end, program end
+.
+
+dcheck+.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  ra
+zz
+
+dcheck-.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  ra
+zz
+
+dcheck<.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  ra
+zz
+
+dcheck>.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  ra
+zz
+
+dcheck,.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  ra
+zz
+
+dcheckdot.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  ra
+zz
+
+dcheck[.
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  ra
+zz
+
+dcheck].
+  cpt
+  flflip8.t
+  clone.a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.f      tz a a
+  c ffland.flnot.ftz a a
+  c ffland.f      tz a a
+  ra
+zz
+
+
+
+dand.
+  cfflmpair. z p a
+  rn
+    fpa
+    rfaz
+  az
+zz
+
+dor.
+  cfflmpair. p lone. a
+  rn
+    fpa
+    rfaz
+  az
+zz
+
+dxor.
+  rn
+    c fflmpair. z lone. t
+    fat
+    fpt
+    rftz
+  pz
+zz
+
+dnot.
+  c fflmpair. lone. z t
+  fpt
+  rftz
+zz
+
+e  ff lif <cond> f lmpair <then> <else>.
+dif.
+  rn
+    fap
+    rfpz
+  pz
+zz
+
+dopinc.
+  cflarrayread. p a
+  flinc8. a
+  fflarraywrite. a p
+  rp
+zz
+
+dopdec.
+  cflarrayread. p a
+  fldec8. a
+  fflarraywrite. a p
+  rp
+zz
+
+dopnext.
+  flarraynext. p
+  rp
+zz
+
+dopprev.
+  flarrayprev. p
+  rp
+zz
+
+dopin.
+  fflarraywrite. flinput8.z p
+  rp
+zz
+
+dopout.
+  cflarrayread. p a
+  floutput8.a
+  rp
+zz
+
+dnop.
+  rp
+zz
+
+dmakeloop1.
+  rn
+    fap
+    c flarrayread. p t
+    c flisnonzero8. t t
+    c fflif.t fflmpair. nrpzz s t
+    rftp
+  pz
+zz
+
+dmakeloop.
+  rn
+    c flarrayread. p t
+    c flisnonzero8. t t
+    c fflif.t fflmpair. nrpzz a t
+    rftp
+  flmakeloop1.pz
+zz
+
+dconstruct.
+  c flinput8.z a
+  c fflconcat. p flconstructop.a b
+  c fflif. flcheck[.a fflmpair. lnop. lconstructloop. t
+  c ftb b
+  c f flif. flcheck].a fflmpair. s nrpzz t
+  rftb
+zz
+
+dconstructloop.
+  rfflconcat. p flmakeloop. flconstruct.z
+zz
+
+dconstructop.
+  cpa
+  c lnop. t
+  c f flif. flcheck+.a   fflmpair. t lopinc.  t
+  c f flif. flcheck-.a   fflmpair. t lopdec.  t
+  c f flif. flcheck<.a   fflmpair. t lopprev. t
+  c f flif. flcheck>.a   fflmpair. t lopnext. t
+  c f flif. flcheckdot.a fflmpair. t lopout.  t
+  c f flif. flcheck,.a   fflmpair. t lopin.   t
+  rt
+zz
+
+dmain.
+  cflconstruct.za
+  faz
+  rz
+zz
